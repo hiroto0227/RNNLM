@@ -22,7 +22,9 @@ class Data():
     timelength = 30
 
     def __init__(self):
-        pass
+        self.img1 = Image.new("L", (self.image_size, self.image_size), 0x00)
+        self.draw = ImageDraw.Draw(self.img1)
+        self.font = ImageFont.truetype("/Library/Fonts/Osaka.ttf", 20, encoding="unic")
 
     def load(self):
         #output: ['こんにちは', '私は今日どこどこにいきます。', ... ]
@@ -33,25 +35,21 @@ class Data():
     def char2image(self, char):
         #input 私
         #output [私のImagevec]
-        img1 = Image.new("L", (self.image_size, self.image_size), 0x00)
-        draw = ImageDraw.Draw(img1)
-        font = ImageFont.truetype("/Library/Fonts/Osaka.ttf", 20, encoding="unic")
-        draw.text(xy=(2,0) ,text= char, fill=(0xff), font=font)
-        charvec = np.array(img1).reshape((self.image_size * self.image_size))
+        self.draw.text(xy=(2,0) ,text= char, fill=(0xff), font=self.font)
+        charvec = np.array(self.img1, dtype=np.int8).reshape((self.image_size * self.image_size))
         self.char_image_dic[char] = charvec
         return charvec
 
     def makeData(self, corpus):
-        X = np.zeros((0, self.image_size * self.image_size))
-        y = np.zeros((len(corpus), self.timelength, self.image_size*self.image_size))
+        X = np.zeros((0, self.image_size * self.image_size), dtype=np.int8)
+        y = np.zeros((0, self.image_size * self.image_size), dtype=np.int8)
         input_charvec = np.zeros((self.image_size * self.image_size))
         #1文区切りずつ
         for i in range(len(corpus)):
-            print('{} / {}'.format(i, len(corpus)))
             #1単語区切りずつ
             for j in range(len(corpus[i])):
                 X = np.append(input_charvec, X)
-                if corpus[i][j] in self.char_image_dic:
+                if corpus[i][j] in self.char_image_dic.keys():
                     target_charvec = self.char_image_dic[corpus[i][j]]
                 else:
                     target_charvec = self.char2image(corpus[i][j])
@@ -66,7 +64,7 @@ class Data():
         return X_train, y_train, X_test, y_test
 
     def saveData(self, X_train, y_train):
-        with open('./text_image_dic', 'wb') as f:
+        with open('./char_image_dic', 'wb') as f:
             pickle.dump(self.char_image_dic, f)
         with open('./X_train', 'wb') as f:
             pickle.dump(X_train, f)
